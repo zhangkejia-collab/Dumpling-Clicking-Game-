@@ -93,19 +93,21 @@
             pointer-events: none;
         }
 
-        /* 物品 Emoji */
-        .item-emoji {
+        /* 物品 (Emoji與真實圖片共用) */
+        .game-item {
             position: absolute;
-            font-size: 60px;
+            font-size: 60px; /* 給 Emoji 用的字體大小 */
+            width: 70px;     /* 給 圖片 用的寬度限制 */
             cursor: pointer;
             user-select: none;
             transition: transform 0.1s;
             z-index: 5;
+            object-fit: contain;
         }
-        .item-emoji:active {
+        .game-item:active {
             transform: scale(0.85);
         }
-        .item-emoji.hidden {
+        .game-item.hidden {
             display: none;
         }
 
@@ -169,17 +171,22 @@
     </div>
 
     <script>
+        // --- 遊戲資料設定 ---
         const gameData = [
-            { id: 'cabbage', emoji: '🥬', name: '半顆高麗菜', isTarget: true, x: 650, y: 150 },
-            { id: 'soy-sauce', emoji: '🍶', name: '一瓶醬油', isTarget: true, x: 200, y: 350 },
-            { id: 'pork', emoji: '🥩', name: '一塊豬肉', isTarget: true, x: 450, y: 450 },
-            { id: 'green-onion', emoji: '🌿', name: '一把青蔥', isTarget: true, x: 500, y: 80 },
-            { id: 'egg', emoji: '🥚', name: '一顆雞蛋', isTarget: true, x: 100, y: 120 },
+            // 使用 type: 'image' 載入真實圖片網址
+            { id: 'cabbage', type: 'image', content: 'https://cdn-icons-png.flaticon.com/512/3712/3712165.png', name: '半顆高麗菜', isTarget: true, x: 650, y: 150 },
+            { id: 'green-onion', type: 'image', content: 'https://cdn-icons-png.flaticon.com/512/5556/5556556.png', name: '一把青蔥', isTarget: true, x: 480, y: 220 },
             
-            { id: 'vinegar', emoji: '🍾', name: '烏醋', isTarget: false, x: 300, y: 200, trapMsg: '那是烏醋，不是醬油喔！' },
-            { id: 'salt', emoji: '🧂', name: '鹽巴', isTarget: false, x: 150, y: 480, trapMsg: '這是鹽巴，我們現在不需要喔！' },
-            { id: 'apple', emoji: '🍎', name: '蘋果', isTarget: false, x: 600, y: 300, trapMsg: '這是蘋果，包水餃用不到啦！' },
-            { id: 'scissors', emoji: '✂️', name: '剪刀', isTarget: false, x: 350, y: 80, trapMsg: '這是剪刀，廚房裡要小心使用！' }
+            // 其餘使用 type: 'emoji'
+            { id: 'soy-sauce', type: 'emoji', content: '🍶', name: '一瓶醬油', isTarget: true, x: 280, y: 380 },
+            { id: 'pork', type: 'emoji', content: '🥩', name: '一塊豬肉', isTarget: true, x: 450, y: 450 },
+            { id: 'egg', type: 'emoji', content: '🥚', name: '一顆雞蛋', isTarget: true, x: 600, y: 380 }, // 已經移出清單遮擋區域
+            
+            // 陷阱
+            { id: 'vinegar', type: 'emoji', content: '🍾', name: '烏醋', isTarget: false, x: 350, y: 180, trapMsg: '那是烏醋，不是醬油喔！' },
+            { id: 'salt', type: 'emoji', content: '🧂', name: '鹽巴', isTarget: false, x: 150, y: 480, trapMsg: '這是鹽巴，我們現在不需要喔！' },
+            { id: 'apple', type: 'emoji', content: '🍎', name: '蘋果', isTarget: false, x: 700, y: 280, trapMsg: '這是蘋果，包水餃用不到啦！' },
+            { id: 'scissors', type: 'emoji', content: '✂️', name: '剪刀', isTarget: false, x: 400, y: 80, trapMsg: '這是剪刀，廚房裡要小心使用！' }
         ];
 
         let itemsFound = 0;
@@ -214,14 +221,22 @@
                     shoppingListUI.appendChild(li);
                 }
 
-                const span = document.createElement('span');
-                span.className = 'item-emoji';
-                span.textContent = item.emoji;
-                span.style.left = item.x + 'px';
-                span.style.top = item.y + 'px';
+                // 根據 type 決定要建立 <img> 還是 <span>
+                let element;
+                if (item.type === 'image') {
+                    element = document.createElement('img');
+                    element.src = item.content;
+                } else {
+                    element = document.createElement('span');
+                    element.textContent = item.content;
+                }
+
+                element.className = 'game-item';
+                element.style.left = item.x + 'px';
+                element.style.top = item.y + 'px';
                 
-                span.addEventListener('click', (e) => handleItemClick(e, item, span));
-                itemsContainer.appendChild(span);
+                element.addEventListener('click', (e) => handleItemClick(e, item, element));
+                itemsContainer.appendChild(element);
             });
 
             clearInterval(timerInterval);
