@@ -3,75 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>華語飲食文化記憶遊戲</title>
+    <title>包水餃尋寶遊戲</title>
     <style>
-        :root {
-            --primary-color: #d35400; /* 溫暖的食物橘色 */
-            --bg-color: #fdf6e3;
-            --card-bg: #fff;
-            --text-color: #333;
-            --success-color: #27ae60;
-        }
-
+        /* 基礎排版與字體 */
         body {
-            font-family: 'Helvetica Neue', Arial, 'LiHei Pro', '微軟正黑體', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            font-family: '微軟正黑體', sans-serif;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
         }
 
-        h1 {
-            color: var(--primary-color);
-            text-align: center;
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        p.subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-
-        /* 遊戲網格設計 */
-        .memory-game {
-            width: 100%;
-            max-width: 600px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4x4 網格 */
-            gap: 10px;
-            perspective: 1000px;
-        }
-
-        /* 卡片設計 */
-        .memory-card {
+        /* 遊戲主要區域 */
+        #game-area {
+            width: 800px;
+            height: 600px;
+            background-color: #ffe4c4;
             position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1; /* 保持正方形 */
+            border: 4px solid #8b4513;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
             cursor: pointer;
-            transform-style: preserve-3d;
-            transition: transform 0.5s;
         }
 
-        .memory-card.flip {
-            transform: rotateY(180deg);
+        /* 購物清單 UI */
+        #shopping-list-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            pointer-events: none;
+            z-index: 10;
+        }
+        #shopping-list-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            color: #333;
+            border-bottom: 2px solid #8b4513;
+            padding-bottom: 5px;
+        }
+        #shopping-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #444;
+        }
+        .found {
+            text-decoration: line-through;
+            color: #aaa;
         }
 
-        .memory-card.matched .front-face {
-            background-color: var(--success-color);
+        /* 計時器 UI */
+        #timer-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            z-index: 10;
+        }
+
+        /* 提示訊息彈窗 */
+        #feedback-msg {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            border-color: var(--success-color);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 20px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+            pointer-events: none;
         }
 
-        .front-face, .back-face {
+        /* 物品 Emoji */
+        .item-emoji {
+            position: absolute;
+            font-size: 60px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+            z-index: 5;
+        }
+        .item-emoji:active {
+            transform: scale(0.85);
+        }
+        .item-emoji.hidden {
+            display: none;
+        }
+
+        /* 結束結算畫面 */
+        #end-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            position: absolute;
-            border
+            background: rgba(0,0,0,0.85);
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+        #end-screen h1 {
+            font-size: 50px;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        #end-screen p {
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+        #restart-btn {
+            padding: 12px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: #ff6b6b;
+            color: white;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        #restart-btn:hover {
+            background: #ff5252;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="shopping-list-panel">
+            <h2>包水餃要用的東西：</h2>
+            <ul id="shopping-list"></ul>
+        </div>
+        <div id="timer-display">00:00</div>
+        <div id="feedback-msg">提示訊息</div>
+
+        <div id="end-screen">
+            <h1>恭喜完成！</h1>
+            <p id="final-time">總花費時間：00:00</p>
+            <button id="restart-btn" onclick="startGame()">再玩一次</button>
+        </div>
+
+        <div id="items-container"></div>
+    </div>
+
+    <script>
+        const gameData = [
+            { id: 'cabbage', emoji: '🥬', name: '半顆高麗菜', isTarget: true, x: 650, y: 150 },
+            { id: 'soy-sauce', emoji: '🍶', name: '一瓶醬油', isTarget: true, x: 200, y: 350 },
+            { id: 'pork', emoji: '🥩', name: '一塊豬肉', isTarget: true, x: 450, y: 450 },
+            { id: 'green-onion', emoji: '🌿', name: '一把青蔥', isTarget: true, x: 500, y: 80 },
+            { id: 'egg', emoji: '🥚', name: '一顆雞蛋', isTarget: true, x: 100, y: 120 },
+            
+            { id: 'vinegar', emoji: '🍾', name: '烏醋', isTarget: false, x: 300, y: 200, trapMsg: '那是烏醋，不是醬油喔！' },
+            { id: 'salt', emoji: '🧂', name: '鹽巴', isTarget: false, x: 150, y: 480, trapMsg: '這是鹽巴，我們現在不需要喔！' },
+            { id: 'apple', emoji: '🍎', name: '蘋果', isTarget: false, x: 600, y: 300, trapMsg: '這是蘋果，包水餃用不到啦！' },
+            { id: 'scissors', emoji: '✂️', name: '剪刀', isTarget: false, x: 350, y: 80, trapMsg: '這是剪刀，廚房裡要小心使用！' }
+        ];
+
+        let itemsFound = 0;
+        let targetCount = 0;
+        let timerInterval;
+        let secondsElapsed = 0;
+        let feedbackTimeout;
+
+        const gameArea = document.getElementById('game-area');
+        const itemsContainer = document.getElementById('items-container');
+        const shoppingListUI = document.getElementById('shopping-list');
+        const timerDisplay = document.getElementById('timer-display');
+        const feedbackMsg = document.getElementById('feedback-msg');
+        const endScreen = document.getElementById('end-screen');
+        const finalTimeDisplay = document.getElementById('final-time');
+
+        function startGame() {
+            itemsFound = 0;
+            secondsElapsed = 0;
+            targetCount = gameData.filter(item => item.isTarget).length;
+            
+            endScreen.style.display = 'none';
+            itemsContainer.innerHTML = '';
+            shoppingListUI.innerHTML = '';
+            updateTimerDisplay();
+
+            gameData.forEach(item => {
+                if (item.isTarget) {
+                    const li = document.createElement('li');
+                    li.id = `list-${item.id}`;
+                    li.textContent = item.name;
+                    shoppingListUI.appendChild(li);
+                }
+
+                const span = document.createElement('span');
+                span.className = 'item-emoji';
+                span.textContent = item.emoji;
+                span.style.left = item.x + 'px';
+                span.style.top = item.y + 'px';
+                
+                span.addEventListener('click', (e) => handleItemClick(e, item, span));
+                itemsContainer.appendChild(span);
+            });
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function handleItemClick(event, itemData, element) {
+            event.stopPropagation();
+            if (itemData.isTarget) {
+                element.classList.add('hidden');
+                document.getElementById(`list-${itemData.id}`).classList.add('found');
+                showFeedback(`太好了！找到了「${itemData.name}」`, '#4CAF50');
+                itemsFound++;
+                if (itemsFound === targetCount) {
+                    endGame();
+                }
+            } else {
+                showFeedback(itemData.trapMsg, '#ff6b6b');
+            }
+        }
+
+        gameArea.addEventListener('click', () => {
+            if (itemsFound < targetCount) {
+                showFeedback('這裡沒有我們需要的東西喔', '#ff9800');
+            }
+        });
+
+        function showFeedback(text, bgColor) {
+            feedbackMsg.textContent = text;
+            feedbackMsg.style.backgroundColor = bgColor;
+            feedbackMsg.style.opacity = '1';
+            
+            clearTimeout(feedbackTimeout);
+            feedbackTimeout = setTimeout(() => {
+                feedbackMsg.style.opacity = '0';
+            }, 2500);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const seconds = String(secondsElapsed % 60).padStart(2, '0');
+            timerDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            setTimeout(() => {
+                endScreen.style.display = 'flex';
+                finalTimeDisplay.textContent = `總花費時間：${timerDisplay.textContent}`;
+            }, 500);
+        }
+
+        window.onload = startGame;
+    </script>
+</body>
+</html>
